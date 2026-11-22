@@ -7,7 +7,7 @@
 // the clock, the network or the order of the filesystem, so two runs
 // over the same repository write the same bytes.
 
-import { cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-game.ts';
@@ -16,9 +16,13 @@ const root = dirname(fileURLToPath(import.meta.url));
 const outDir = process.env.MAKEFUN_OUTPUT_DIR || '/output';
 
 // Start from an empty directory so a stale file can never leak from one
-// hand-in into the next.
-rmSync(outDir, { recursive: true, force: true });
+// hand-in into the next. The output directory itself is never removed —
+// on the grading runner it can be a mounted volume, and removing a mount
+// point fails — so only its contents are cleared.
 mkdirSync(outDir, { recursive: true });
+for (const name of readdirSync(outDir)) {
+  rmSync(join(outDir, name), { recursive: true, force: true });
+}
 
 cpSync(join(root, 'game'), join(outDir, 'game'), { recursive: true });
 cpSync(join(root, 'screenshots'), join(outDir, 'screenshots'), { recursive: true });
